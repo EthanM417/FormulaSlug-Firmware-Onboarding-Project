@@ -1,4 +1,3 @@
-
 #include "AnalogIn.h"
 #include "ThisThread.h"
 #include "mbed.h"
@@ -18,11 +17,11 @@
 #define sensorTimeout 100
 
 
-AnalogIn s1{sensor1};
-AnalogIn s2{sensor2};
-AnalogIn bS{brakeSensor};
-DigitalIn cS{conSwitch};
-DigitalOut bz{buzzer};
+AnalogIn s1{sensor1}; // first throttle position sensor
+AnalogIn s2{sensor2}; // second throttle position sensor
+AnalogIn bS{brakeSensor}; // brake position sensor
+DigitalIn cS{conSwitch}; // cockpit control switch
+DigitalOut bz{buzzer}; // buzzer
 bool devianceDetected = false;
 bool brakeSet = false;
 bool switchSet = false;
@@ -32,7 +31,6 @@ float pedalPos(AnalogIn&, float, float);
 float calcAveragePos(float, float);
 
 
-// main() runs in its own thread in the OS
 int main()
 {
     int64_t timeOfDeviance = 0;
@@ -42,10 +40,11 @@ int main()
     float difference;
     Timer t;
     float brakeSensorRead = 0;
-
+/* Wait for ready to drive sequence:
+  first hit the brake then hit the cockpit control switch
+*/
     printf("Waiting for Init sequence:\n");
     while (!brakeSet){
-      //printf("Waiting for input");
       brakeSensorRead = pedalPos(bS, brakeSensorLow, brakeSensorHigh);
       if(brakeSensorRead > 80){
         brakeSet = true;
@@ -66,6 +65,7 @@ int main()
     }
 
 
+    //Main loop executing after the ready to drive sequence:
 
     while (true) {
         s1Reading = pedalPos(s1, sensor1Low, sensor1High);
@@ -73,27 +73,27 @@ int main()
 
         difference = (s1Reading - s2Reading);
 
-        realReading = calcAveragePos(s1Reading, s2Reading);
-          timeOfDeviance = t.elapsed_time().count() /1000;
-        if((-10 > difference || difference > 10)){
+        realReading = calcAveragePos(s1Reading, s2Reading); //read the 2 sensors and find the average between them
+        timeOfDeviance = t.elapsed_time().count() /1000; // convert the time to milliseconds
+        if((-10 > difference || difference > 10)){ // start the timer if a deviance of more than 10% detected
             t.start();
-        }else if((-10 < difference && difference < 10)){ //&& timeOfDeviance!=0){
-            t.reset();
+        }else if((-10 < difference && difference < 10)){
+            t.reset(); // stop the timer when the deviance stops
             timeOfDeviance = 0;
         }
 
 
-        if(timeOfDeviance < sensorTimeout){
+        if(timeOfDeviance < sensorTimeout){ //output the throttle position to the serial output
             printf("%f", realReading);
             printf("\n");
         }else{
-            printf("0\n");
+            printf("%f", 0);
         }
     }
 }
 
 
-float pedalPos(AnalogIn &givenSensor, float LowEnd, float HighEnd){
+float pedalPos(AnalogIn &givenSensor, float LowEnd, float HighEnd){ //calculate pedal position based off of voltage range and read voltage
     float measuredV = givenSensor.read()*3.3;
     if(measuredV < LowEnd || measuredV > HighEnd){
       return 0;
@@ -103,6 +103,6 @@ float pedalPos(AnalogIn &givenSensor, float LowEnd, float HighEnd){
     }
 }
 
-float calcAveragePos(float reading1, float reading2){
+float calcAveragePos(float reading1, float reading2){ // calculate the average between two values
     return (reading1+reading2)/2;
 }
