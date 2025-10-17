@@ -2,6 +2,12 @@
 
 The following is my submission of the firmware onboarding project in order to join the formula slug club at UCSC
 
+Clone with:
+```
+git clone https://github.com/EthanM417/FormulaSlug-Firmware-Onboarding-Project.git --recursive  
+```
+
+
 # Description:
 
 This project is an implementation of an electronic throttle control algorithm, consistent with the rules for the Formula SAE competition, outlined [here](https://www.fsaeonline.com/cdsweb/gen/DownloadDocument.aspx?DocumentID=278fd4d7-aa27-4e33-bc4a-090148e662a0).
